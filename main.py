@@ -2,10 +2,11 @@ import os
 import asyncio
 import logging
 from aiohttp import web
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 # --- SOZLAMALAR ---
 TOKEN = "7919823792:AAE0i-8p4A777M9zq70IxhTl2DE4-8VzV8Y"
@@ -15,66 +16,76 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# --- WEB SERVER (Render uchun) ---
+# --- HOLATLAR (States) ---
+class AdvisorForm(StatesGroup):
+    yonalish = State()
+    ism = State()
+    savol = State()
+
+# --- WEB SERVER ---
 async def handle(request):
-    return web.Response(text="Bot ishlayapti!")
+    return web.Response(text="Maslahatchi boti faol!")
+
+# --- TUGMALAR ---
+def get_main_menu():
+    builder = ReplyKeyboardBuilder()
+    builder.button(text="🎯 Kasbga yo'naltirish")
+    builder.button(text="🧠 Psixologik maslahat")
+    builder.button(text="💡 Taklif va tashabbuslar")
+    builder.button(text="❓ Umumiy savollar")
+    builder.adjust(2)
+    return builder.as_markup(resize_keyboard=True)
 
 # --- BOT LOGIKASI ---
-class Form(StatesGroup):
-    ism = State()
-    mavzu = State()
-    tavsif = State()
-
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
-    await message.answer("Assalomu alaykum! Maktab maslahatchisi botiga xush kelibsiz. Tashabbus yuborish uchun /tashabbus buyrug'ini bosing.")
+    await message.answer(
+        f"Assalomu alaykum, {message.from_user.full_name}!\n"
+        "Men — Maktab maslahatchisi botiman. Sizga qanday yordam bera olaman?",
+        reply_markup=get_main_menu()
+    )
 
-@dp.message(Command("tashabbus"))
-async def start_form(message: types.Message, state: FSMContext):
-    await message.answer("Ismingiz va sinfingizni yozing:")
-    await state.set_state(Form.ism)
+@dp.message(F.text.in_(["🎯 Kasbga yo'naltirish", "🧠 Psixologik maslahat", "💡 Taklif va tashabbuslar", "❓ Umumiy savollar"]))
+async def select_category(message: types.Message, state: FSMContext):
+    await state.update_data(yonalish=message.text)
+    await message.answer("To'liq ismingiz va sinfingizni yozing:", reply_markup=types.ReplyKeyboardRemove())
+    await state.set_state(AdvisorForm.ism)
 
-@dp.message(Form.ism)
+@dp.message(AdvisorForm.ism)
 async def get_name(message: types.Message, state: FSMContext):
     await state.update_data(ism=message.text)
-    await message.answer("Tashabbusingiz mavzusi nima?")
-    await state.set_state(Form.mavzu)
+    data = await state.get_data()
+    await message.answer(f"Tushunarli. Endi '{data['yonalish']}' bo'yicha murojaatingizni batafsil yozib qoldiring:")
+    await state.set_state(AdvisorForm.savol)
 
-@dp.message(Form.mavzu)
-async def get_topic(message: types.Message, state: FSMContext):
-    await state.update_data(mavzu=message.text)
-    await message.answer("Tashabbus haqida batafsil ma'lumot bering:")
-    await state.set_state(Form.tavsif)
-
-@dp.message(Form.tavsif)
-async def get_desc(message: types.Message, state: FSMContext):
+@dp.message(AdvisorForm.savol)
+async def get_question(message: types.Message, state: FSMContext):
     user_data = await state.get_data()
-    report = (f"📩 YANGI TASHABBUS!\n\n👤 Kimdan: {user_data['ism']}\n"
-              f"📌 Mavzu: {user_data['mavzu']}\n📝 Tavsif: {message.text}")
+    
+    report = (
+        f"📩 **YANGI MUROJAAT!**\n\n"
+        f"📂 **Yo'nalish:** {user_data['yonalish']}\n"
+        f"👤 **Kimdan:** {user_data['ism']}\n"
+        f"📝 **Murojaat:** {message.text}\n"
+        f"🔗 **Username:** @{message.from_user.username or 'mavjud emas'}"
+    )
     
     try:
-        await bot.send_message(ADMIN_ID, report)
-        await message.answer("Rahmat! Tashabbusingiz qabul qilindi va maslahatchiga yuborildi.")
+        await bot.send_message(ADMIN_ID, report, parse_mode="Markdown")
+        await message.answer("Rahmat! Murojaatingiz maslahatchiga yuborildi. Tez orada siz bilan bog'lanishadi.", reply_markup=get_main_menu())
     except Exception as e:
-        await message.answer("Xatolik yuz berdi. Keyinroq qayta urinib ko'ring.")
-        logging.error(f"Xabar yuborishda xatolik: {e}")
+        await message.answer("Xatolik! Adminga xabar yuborib bo'lmadi.", reply_markup=get_main_menu())
     
     await state.clear()
 
 async def main():
-    # Web serverni sozlash
     app = web.Application()
     app.router.add_get("/", handle)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, '0.0.0.0', int(os.getenv("PORT", 8080)))
     await site.start()
-    
-    logging.info("Bot ishga tushdi...")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        logging.info("Bot to'xtatildi")
+    asyncio.run(main())
