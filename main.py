@@ -9,14 +9,14 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 
 # --- SOZLAMALAR ---
-TOKEN = "7919823792:AAFLA1PPeR0SBVYoxI2EGFcU6LfQ__x6Tls" 
+TOKEN = "7919823792:AAF33A8bsVdAj-_tr66xcVenys8Ls01jsoU"
 ADMIN_ID = 8323916383
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# --- SAVOLLAR BAZASI (20 TA) ---
+# --- TEST SAVOLLARI BAZASI (20 TA) ---
 QUESTIONS = [
     "1. Texnik qurilmalarni ta'mirlash sizga yoqadimi?",
     "2. Insonlarga maslahat berishni yoqtirasizmi?",
@@ -46,36 +46,75 @@ class QuizState(StatesGroup):
 async def handle(request):
     return web.Response(text="Maktab maslahatchisi faol!")
 
-# --- MENYULAR ---
+# --- DOIMIY ASOSIY MENYU ---
 def main_menu():
     builder = ReplyKeyboardBuilder()
-    builder.button(text="🎯 Kasb tanlash")
-    builder.button(text="🧠 Ruhiy ko'mak")
-    builder.button(text="👨‍👩‍👧 Ota-onalar uchun")
-    builder.button(text="👨‍🏫 O'qituvchilar uchun")
+    builder.button(text="🔍 Kasb tanlash")
+    builder.button(text="👨‍👩‍👧‍👦 Ota-onalar uchun")
     builder.button(text="📝 Testlar va so'rovnomalar")
+    builder.button(text="👨‍🏫 O'qituvchilar uchun")
+    builder.button(text="🧠 Ruhiy ko'mak")
     builder.button(text="📚 Foydali linklar")
     builder.adjust(2)
     return builder.as_markup(resize_keyboard=True)
 
 def quiz_inline():
     builder = InlineKeyboardBuilder()
-    builder.button(text="✅ Ha (Yoqadi)", callback_data="score_1")
-    builder.button(text="❌ Yo'q (Yoqmaydi)", callback_data="score_0")
+    builder.button(text="✅ Ha", callback_data="score_1")
+    builder.button(text="❌ Yo'q", callback_data="score_0")
     builder.adjust(2)
     return builder.as_markup()
 
 # --- BOT LOGIKASI ---
+
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
-    await message.answer(f"🌟 Salom {message.from_user.first_name}!\nMen 6-maktab **Maktab maslahatchisi**man.", reply_markup=main_menu())
+    await message.answer(
+        f"🌟 Salom {message.from_user.first_name}!\nMen 6-maktab **Maktab maslahatchisi**man. "
+        "Sizga o'qishingiz va kelajagingizda yordam berishga tayyorman.", 
+        reply_markup=main_menu()
+    )
 
+# 1. Kasb tanlash (Siz so'ragan AI javob)
+@dp.message(F.text == "🔍 Kasb tanlash")
+async def ai_career_advice(message: types.Message):
+    await message.answer(
+        "🤖 **Maktab maslahatchisi (AI):**\n\n"
+        "Kelajakni hozirdan rejalashtirish muhim! Sizning qiziqishlaringiz va qobiliyatlaringizga "
+        "mos keladigan eng istiqbolli kasblarni tahlil qilishga tayyorman. Qaysi yo'nalish sizni ko'proq jalb qiladi?"
+    )
+
+# 2. Ota-onalar uchun (Siz so'ragan AI javob)
+@dp.message(F.text == "👨‍👩‍👧‍👦 Ota-onalar uchun")
+async def ai_parents_support(message: types.Message):
+    await message.answer(
+        "🤖 **Maktab maslahatchisi (AI):**\n\n"
+        "Hurmatli ota-onalar! Farzandingizning ta'lim jarayoni va ruhiy xotirjamligi biz uchun ustuvor vazifa. "
+        "Ular bilan samarali muloqot qilish va o'qishga bo'lgan qiziqishini oshirish bo'yicha maslahatlar bera olaman."
+    )
+
+# 3. O'qituvchilar uchun (Siz so'ragan AI javob)
+@dp.message(F.text == "👨‍🏫 O'qituvchilar uchun")
+async def ai_teachers_help(message: types.Message):
+    await message.answer(
+        "🤖 **Maktab maslahatchisi (AI):**\n\n"
+        "Assalomu alaykum, aziz ustoz! Dars jarayonini yanada qiziqarli qilish va zamonaviy "
+        "pedagogik texnologiyalardan foydalanish bo'yicha metodik yordamga tayyorman."
+    )
+
+# 4. Testlar va so'rovnomalar (Siz so'ragan AI javob + Testni boshlash)
 @dp.message(F.text == "📝 Testlar va so'rovnomalar")
-async def start_quiz(message: types.Message, state: FSMContext):
+async def ai_testing_center(message: types.Message, state: FSMContext):
+    await message.answer(
+        "🤖 **Maktab maslahatchisi (AI):**\n\n"
+        "O'z bilimingiz va psixologik holatingizni tekshirib ko'rishga tayyormisiz? "
+        "Hozir biz 20 ta savoldan iborat kasbiy moyillik testini boshlaymiz."
+    )
     await state.update_data(current_q=0, total_score=0)
-    await message.answer("🚀 **Kasbiy moyillik testi boshlandi!** (20 ta savol)\n\n" + QUESTIONS[0], reply_markup=quiz_inline())
+    await message.answer(f"Savol 1/20:\n\n{QUESTIONS[0]}", reply_markup=quiz_inline())
     await state.set_state(QuizState.answering)
 
+# --- TEST JARAYONI ---
 @dp.callback_query(QuizState.answering)
 async def process_quiz(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
@@ -83,33 +122,18 @@ async def process_quiz(callback: types.CallbackQuery, state: FSMContext):
     total_score = data.get('total_score') + int(callback.data.split("_")[1])
     
     current_q += 1
-    
     if current_q < len(QUESTIONS):
         await state.update_data(current_q=current_q, total_score=total_score)
-        await callback.message.edit_text(f"Savol {current_q+1}/{len(QUESTIONS)}:\n\n{QUESTIONS[current_q]}", reply_markup=quiz_inline())
+        await callback.message.edit_text(f"Savol {current_q+1}/20:\n\n{QUESTIONS[current_q]}", reply_markup=quiz_inline())
     else:
-        # Test yakunlandi
         await state.clear()
-        result_text = ""
-        if total_score >= 15:
-            result_text = "🔥 **Siz faol va harakatchan yetakchisiz!** Sizga boshqaruv, IT yoki muhandislik sohalari mos keladi."
-        elif total_score >= 10:
-            result_text = "🎓 **Sizda intellektual salohiyat kuchli.** Ilm-fan, pedagogika yoki tibbiyot yo'nalishlarini ko'rib chiqing."
-        else:
-            result_text = "🎨 **Siz ijodkor va ijtimoiy insonsiz.** San'at, psixologiya yoki xizmat ko'rsatish sohalari siz uchun."
+        result = "🔥 Ajoyib! "
+        if total_score >= 15: result += "Sizda yetakchilik va texnik qobiliyat kuchli."
+        elif total_score >= 8: result += "Siz ko'proq ijtimoiy va gumanitar sohalarga moyilsiz."
+        else: result += "Siz ijodiy va tinch ishlarni yoqtirasiz."
         
-        await callback.message.edit_text(f"🏁 **Test yakunlandi!**\n\nTo'plangan ball: {total_score}\n\n**Xulosa:** {result_text}")
-    
+        await callback.message.edit_text(f"🏁 Test yakunlandi!\nTo'plangan ball: {total_score}\n\nNatija: {result}")
     await callback.answer()
-
-@dp.message()
-async def school_ai_handler(message: types.Message):
-    msg = message.text.lower()
-    if "salom" in msg:
-        await message.answer("Assalomu alaykum! Men maktab maslahatchisiman. Sizga qanday yordam bera olaman?")
-    else:
-        await message.answer("🤖 *Maktab maslahatchisi tahlili:* Xabaringiz qabul qilindi. Otabek Botirovga yubordim.")
-        await bot.send_message(ADMIN_ID, f"📩 {message.from_user.full_name}: {message.text}")
 
 async def main():
     app = web.Application()
