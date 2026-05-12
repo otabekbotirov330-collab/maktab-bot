@@ -33,7 +33,7 @@ def main_menu_inline():
 async def start_cmd(message: types.Message):
     welcome_text = (
         f"👋 **Assalomu alaykum, {message.from_user.first_name}!**\n\n"
-        "Men 6-maktabning **Intellektual Yordamchisi**man. "
+        "Men 6-maktabning **Maktab maslahtchisi**man. "
         "Sizga kasb tanlash, o'qish va psixologik masalalarda "
         "darhol javob bera olaman.\n\n"
         "👇 Kerakli bo'limni tanlang:"
