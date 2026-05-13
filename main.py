@@ -11,7 +11,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 
 # --- SOZLAMALAR ---
-TOKEN = "7919823792:AAE87S2AyZaV7niYENd-mTW6yx9AN5Ntkgg"
+TOKEN = "7919823792:AAHijlxUSUWanNTKY9L4oCvaOVHf5FE7tuY"
 ADMIN_ID = 8323916383 
 EXCEL_FOLDER = "test_results"
 
