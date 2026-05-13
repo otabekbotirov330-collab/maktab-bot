@@ -13,8 +13,8 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.types import FSInputFile
 
 # --- SOZLAMALAR ---
-TOKEN = "7919823792:AAEj9P..." # Bot tokeningiz
-ADMIN_ID = 8323916383 # Sizning ID raqamingiz
+TOKEN = "7919823792:AAHDzUwHNJt36NMjRWTaaHhvHgRewRHWWic"
+ADMIN_ID = 8323916383
 ADMIN_FOLDER = "admin_data"
 CERT_FOLDER = "certificates"
 
