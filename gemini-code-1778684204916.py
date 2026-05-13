@@ -10,7 +10,7 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.types import FSInputFile
 
 # --- SOZLAMALAR ---
-TOKEN = "7919823792:AAEj9P..." # O'z tokeningizni qo'ying
+TOKEN = "7919823792:AAFnn3CFMjMND-d26m6Svp1J_UyVgh3SEC0"
 ADMIN_ID = 8323916383 
 ADMIN_FOLDER, CERT_FOLDER = "admin_data", "certificates"
 EXCEL_FILE = os.path.join(ADMIN_FOLDER, "umumiy_natijalar.xlsx")
