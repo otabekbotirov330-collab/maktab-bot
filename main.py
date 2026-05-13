@@ -1,7 +1,4 @@
-import os
-import asyncio
-import logging
-import pandas as pd
+import os, asyncio, logging, pandas as pd
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 from aiohttp import web
@@ -13,139 +10,191 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.types import FSInputFile
 
 # --- SOZLAMALAR ---
-TOKEN = "7919823792:AAFO59IhNsiFIWfC93mXmoylAmrU3brLf00"
-ADMIN_ID = 8323916383
-ADMIN_FOLDER = "admin_data"
-CERT_FOLDER = "certificates"
+TOKEN = "7919823792:AAFnn3CFMjMND-d26m6Svp1J_UyVgh3SEC0"
+ADMIN_ID = 8323916383 
+ADMIN_FOLDER, CERT_FOLDER = "admin_data", "certificates"
 
-for folder in [ADMIN_FOLDER, CERT_FOLDER]:
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+for f in [ADMIN_FOLDER, CERT_FOLDER]:
+    if not os.path.exists(f): os.makedirs(f)
 
 logging.basicConfig(level=logging.INFO)
-bot = Bot(token=TOKEN)
-dp = Dispatcher()
+bot, dp = Bot(token=TOKEN), Dispatcher()
 
 class QuizState(StatesGroup):
     waiting_name = State()
     answering = State()
 
-# --- 50 TA PROFESSIONAL SAVOL ---
-# Bu savollar o'quvchining qiziqishlarini aniqlashga yordam beradi
+class ContactState(StatesGroup):
+    waiting_message = State()
+
+# --- 40 TA KASBGA YO'NALTIRISH SAVOLLARI ---
 QUESTIONS = [
-    "1. Kompyuter dasturlari qanday ishlashiga qiziqasizmi?",
-    "2. Tabiat va ekologiyani asrash siz uchun muhimmi?",
-    "3. Robotlarni yasash yoki boshqarishni xohlaysizmi?",
-    "4. Matematik masalalarni yechish sizga zavq beradimi?",
-    "5. Kelajakda sun'iy intellekt bilan ishlashni xohlaysizmi?",
-    "6. Odamlarga psixologik yordam berish sizga yoqadimi?",
-    "7. Yangi texnologik qurilmalarni qismlarga ajratib ko'rasizmi?",
-    "8. Videomontaj yoki rasm tahrirlashga qiziqasizmi?",
-    "9. Chet tillarini o'rganish siz uchun osonmi?",
-    "10. Jamoada yetakchi (lider) bo'lishni yoqtirasizmi?",
-    "11. Tibbiyot va inson salomatligi sohasida ishlashni xohlaysizmi?",
-    "12. Kosmos va astronomiya sizni o'ziga tortadimi?",
-    "13. Kimyoviy tajribalar o'tkazishga qiziqasizmi?",
-    "14. Iqtisodiyot va biznes yuritishni o'rganmoqchimisiz?",
-    "15. Arxitektura va binolar loyihasini chizish yoqadimi?",
-    "16. Qishloq xo'jaligida innovatsiyalarni qo'llashga qiziqasizmi?",
-    "17. Huquqshunos bo'lib odamlar haqini himoya qilishni xohlaysizmi?",
-    "18. Avtomobillar dvigateli va tuzilishi sizga qiziqmi?",
-    "19. Jurnalistika yoki blogerlik sohasiga qiziqasizmi?",
-    "20. Sport bilan professional shug'ullanishni xohlaysizmi?",
-    "21. Dizayn va modaga qiziqishingiz bormi?",
-    "22. O'qituvchilik qilib bilim ulashish sizga yoqadimi?",
-    "23. Kiberxavfsizlik (hakerlardan himoya) sohasiga qiziqasizmi?",
-    "24. Chet davlatlarda o'qish va ishlashni maqsad qilganmisiz?",
-    "25. Grafik dizayn va animatsiya yaratish sizga qiziqmi?",
-    "26. Logistika va transport tizimini boshqarish yoqadimi?",
-    "27. Biotexnologiya va gen muhandisligiga qiziqasizmi?",
-    "28. Siyosat va davlat boshqaruvi sizga qiziqmi?",
-    "29. Xalqaro aloqalar va diplomatiyani yoqtirasizmi?",
-    "30. Moliyaviy tahlil va birja bilan ishlashni xohlaysizmi?",
-    "31. Qurilish muhandisligi sizga yoqadimi?",
-    "32. Turizm va mehmonxona biznesiga qiziqasizmi?",
-    "33. Psixologiya va inson xatti-harakatlarini o'rganish yoqadimi?",
-    "34. Muhandislik chizmalari bilan ishlashga qiziqasizmi?",
-    "35. Sahna san'ati va aktyorlikka qiziqishingiz bormi?",
-    "36. Ekologik toza energiya (quyosh, shamol) manbalari qiziqmi?",
-    "37. Ma'lumotlar bazasi bilan ishlash yoqadimi?",
+    "1. Yangi texnologik qurilmalarni qismlarga ajratib ko'rish sizga qiziqmi?",
+    "2. Odamlarga maslahat berish va ularni tinglashni yoqtirasizmi?",
+    "3. Kompyuter dasturlari va o'yinlar qanday ishlashiga qiziqasizmi?",
+    "4. Tabiat va ekologiya muammolari sizni tashvishga soladimi?",
+    "5. Chizish, dizayn yoki kreativ g'oyalar o'ylab topish yoqadimi?",
+    "6. Matematik hisob-kitoblar va mantiqiy masalalarni tez yechasizmi?",
+    "7. Notiqlik va omma oldida so'zlashga moyilligingiz bormi?",
+    "8. Kimyoviy elementlar va tajribalar o'tkazish qiziqmi?",
+    "9. Chet tillarini o'rganish siz uchun oson kechadimi?",
+    "10. Jamoani boshqarish va lider bo'lishni xohlaysizmi?",
+    "11. Tibbiyot va inson tana tuzilishini o'rganish yoqadimi?",
+    "12. Kosmos, yulduzlar va koinot sirlari sizni qiziqtiradimi?",
+    "13. Biznes reja tuzish va pul topish yo'llarini o'ylaysizmi?",
+    "14. Qurilish, arxitektura va bino loyihalari qiziqmi?",
+    "15. Qishloq xo'jaligi va o'simliklar yetishtirish yoqadimi?",
+    "16. Huquq va qonunlarni o'rganish, adolatni himoya qilish qiziqmi?",
+    "17. Avtomobillar va texnika mexanizmlari sizni qiziqtiradimi?",
+    "18. Maqola yozish, blog yuritish yoki jurnalistikaga qiziqasizmi?",
+    "19. Sport va sog'lom turmush tarzini targ'ib qilish yoqadimi?",
+    "20. Psixologiya va inson xarakterini o'rganish qiziqmi?",
+    "21. Kiberxavfsizlik va axborot himoyasi sohasiga qiziqasizmi?",
+    "22. Maktabda dars berish va bilim ulashishni xohlaysizmi?",
+    "23. Animatsiya, 3D modellashtirish yoki multfilmlar yaratish yoqadimi?",
+    "24. Eksperimentlar o'tkazish va laboratoriya ishlarini yoqtirasizmi?",
+    "25. Transport va logistika tizimini boshqarish qiziqmi?",
+    "26. Siyosat va davlat boshqaruvi tizimini o'rganish yoqadimi?",
+    "27. Marketing va reklama orqali mahsulot sotish qiziqmi?",
+    "28. Arxeologiya va tarixiy tadqiqotlar sizni qiziqtiradimi?",
+    "29. Dengiz va suv osti dunyosini o'rganishni xohlaysizmi?",
+    "30. Ijtimoiy tarmoqlar uchun kreativ kontent yaratish yoqadimi?",
+    "31. Robotlar va sun'iy intellekt kelajagiga ishonasizmi?",
+    "32. Mehmonxona va turizm sohasida ishlash qiziqmi?",
+    "33. Moliyaviy tahlil va bank sohasini yoqtirasizmi?",
+    "34. Muhandislik chizmalari va loyihalar bilan ishlash yoqadimi?",
+    "35. Sahna san'ati, teatr yoki kinoga qiziqasizmi?",
+    "36. Quyosh va shamol energiyasini o'rganish qiziqmi?",
+    "37. Ma'lumotlar bazasi (Big Data) bilan ishlash yoqadimi?",
     "38. Oziq-ovqat texnologiyasi va yangi mahsulotlar yaratish qiziqmi?",
-    "39. Arxeologiya va tarixiy tadqiqotlar sizga yoqadimi?",
-    "40. Dengiz yoki aviatsiya sohasida ishlashni xohlaysizmi?",
-    "41. Nanotexnologiyalar kelajagiga ishonasizmi?",
-    "42. Ijtimoiy tarmoqlar uchun kreativ kontent yaratasizmi?",
-    "43. Kitob o'qish va adabiyotga qiziqasizmi?",
-    "44. Xayriya ishlari va volontyorlik bilan shug'ullanasizmi?",
-    "45. Zamonaviy bank tizimini o'rganish yoqadimi?",
-    "46. Videoo'yinlar yaratish (gamedev) sizga qiziqmi?",
-    "47. Faylasuflik va mantiqiy fikrlash yoqadimi?",
-    "48. Shaharsozlik (Urbanistika) muammolari sizni qiziqtiradimi?",
-    "49. Marketing va reklama sohasida ishlashni xohlaysizmi?",
-    "50. Kelajakda o'z shaxsiy biznesingizni ochmoqchimisiz?"
+    "39. Nanotexnologiyalar va mikroskopik dunyo qiziqmi?",
+    "40. Shaxsiy biznes va startap loyihalarni boshlashni xohlaysizmi?"
 ]
 
-# --- ASOSIY HANDLERLAR ---
+# --- 50 TA ZAMONAVIY KASB RO'YXATI ---
+MODERN_JOBS = [
+    "1. Data Scientist", "2. Python Developer", "3. UI/UX Designer", "4. Prompt Engineer",
+    "5. Cyber Security Expert", "6. Blockchain Developer", "7. Cloud Architect", "8. AI Ethics Specialist",
+    "9. Mobile App Developer", "10. Game Developer", "11. DevOps Engineer", "12. Digital Marketer",
+    "13. SMM Manager", "14. Content Creator", "15. SEO Specialist", "16. E-commerce Manager",
+    "17. Renewable Energy Engineer", "18. Genetic Counselor", "19. Robotics Engineer", "20. Drone Pilot",
+    "21. 3D Printing Specialist", "22. Biohacker", "23. Sustainability Consultant", "24. Virtual Reality Designer",
+    "25. Augmented Reality Developer", "26. FinTech Analyst", "27. Crypto Trader", "28. Big Data Analyst",
+    "29. Growth Hacker", "30. Customer Success Manager", "31. Remote Team Manager", "32. Freelancer",
+    "33. Podcaster", "34. Cybersecurity Auditor", "35. Full Stack Developer", "36. Machine Learning Engineer",
+    "37. QA Automation Engineer", "38. Product Manager", "39. Business Intelligence Analyst", "40. Copywriter",
+    "41. Video Editor (AI based)", "42. Motion Designer", "43. Interior Designer (VR based)", "44. Urban Farmer",
+    "45. Telemedicine Doctor", "46. Online Tutor", "47. Digital Transformation Consultant", "48. Influencer",
+    "49. Data Privacy Officer", "50. IT Project Manager"
+]
 
-@dp.message(Command("start"))
-async def cmd_start(message: types.Message):
+# --- ASOSIY MENYU ---
+def main_menu():
     builder = ReplyKeyboardBuilder()
-    builder.button(text="📝 Testdan o'tish")
-    builder.button(text="ℹ️ Maslahatchi")
+    builder.button(text="📝 Kasbiy so'rovnoma")
+    builder.button(text="💡 Kasbiy maslahatlar")
+    builder.button(text="ℹ️ Maslahatchi haqida")
+    builder.button(text="📞 Bog'lanish")
     builder.adjust(2)
-    await message.answer("Assalomu alaykum! Maktab maslahatchisi botiga xush kelibsiz.", reply_markup=builder.as_markup(resize_keyboard=True))
+    return builder.as_markup(resize_keyboard=True)
 
-@dp.message(F.text == "📝 Testdan o'tish")
-async def quiz_name_ask(message: types.Message, state: FSMContext):
-    await message.answer("📝 So'rovnomani boshlash uchun Ism va Familiyangizni kiriting:")
+# --- SERTIFIKAT ---
+def create_modern_cert(name, direction):
+    img = Image.new('RGB', (1200, 800), color=(15, 15, 35))
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([40, 40, 1160, 760], outline=(0, 255, 255), width=4)
+    # Oddiy matn (Render muammosiz chiqishi uchun)
+    draw.text((600, 150), "KASBIY YO'NALTIRISH SERTIFIKATI", fill=(0, 255, 255), anchor="mm")
+    draw.text((600, 350), name.upper(), fill=(255, 255, 255), anchor="mm")
+    draw.text((600, 500), f"Tavsiya: {direction}", fill=(255, 215, 0), anchor="mm")
+    path = os.path.join(CERT_FOLDER, f"cert_{datetime.now().timestamp()}.png")
+    img.save(path)
+    return path
+
+# --- HANDLERLAR ---
+@dp.message(Command("start"))
+async def start(m: types.Message):
+    await m.answer(f"Assalomu alaykum, {m.from_user.full_name}!\n'StartUp Maktab' loyihasining rasmiy botiga xush kelibsiz.", reply_markup=main_menu())
+
+@dp.message(F.text == "ℹ️ Maslahatchi haqida")
+async def about(m: types.Message):
+    info = (
+        "👤 **F.I.SH:** Otabek Bakhtiyorovich Botirov\n"
+        "🏫 **Lavozimi:** “Kelajak” markazlarining umumiy oʻrta ta’lim muassasalaridagi oʻquvchilar tashabbuslarini qoʻllab-quvvatlash boʻyicha maktab maslahatchisi\n"
+        "📍 **Hudud:** Farg'ona viloyati, Rishton tumani\n"
+        "📜 **Asos:** Oʻzbekiston Respublikasi MMTV 153–sonli buyrugʻi\n"
+        "📸 **Hobbisi:** Foto-video operatorlik, AI kontent yaratish\n"
+        "💻 **Raqamli ko'nikma:** Python, aiogram development\n"
+        "🚀 **Loyiha:** 'StartUp Maktab' yaratuvchisi\n"
+        "🎯 **Maqsad:** Iqtidorli yoshlarni qo'llab-quvvatlash\n"
+        "📧 **Aloqa:** @otabekbotirov330\n\n"
+        "🌟 **Slogan:** 'Sening bugungi harakating - ertangi natijang!'"
+    )
+    await m.answer(info)
+
+@dp.message(F.text == "💡 Kasbiy maslahatlar")
+async def jobs(m: types.Message):
+    text = "🚀 **50 ta zamonaviy va istiqbolli kasblar:**\n\n" + "\n".join(MODERN_JOBS)
+    await m.answer(text)
+
+@dp.message(F.text == "📞 Bog'lanish")
+async def contact_init(m: types.Message, state: FSMContext):
+    await m.answer("Ismingizni va murojaatingizni bitta xabarda yozib qoldiring. Maslahatchi tez orada javob beradi:")
+    await state.set_state(ContactState.waiting_message)
+
+@dp.message(ContactState.waiting_message)
+async def get_contact(m: types.Message, state: FSMContext):
+    await bot.send_message(ADMIN_ID, f"📩 **Yangi murojaat!**\nKimdan: {m.from_user.full_name}\nID: {m.from_user.id}\nMatn: {m.text}")
+    await m.answer("✅ Murojaatingiz yuborildi. Rahmat!")
+    await state.clear()
+
+@dp.message(F.text == "📝 Kasbiy so'rovnoma")
+async def quiz_init(m: types.Message, state: FSMContext):
+    await m.answer("Ism va Familiyangizni kiriting:")
     await state.set_state(QuizState.waiting_name)
 
 @dp.message(QuizState.waiting_name)
-async def get_name(message: types.Message, state: FSMContext):
-    await state.update_data(full_name=message.text, current_q=0, total_score=0)
-    builder = InlineKeyboardBuilder().button(text="🚀 Boshlash", callback_data="start_quiz")
-    await message.answer(f"Rahmat, {message.text}! Savollar tayyor. Boshlaymizmi?", reply_markup=builder.as_markup())
+async def get_quiz_name(m: types.Message, state: FSMContext):
+    await state.update_data(name=m.text, curr=0, score=0)
+    builder = InlineKeyboardBuilder().button(text="Boshlash", callback_data="start_q")
+    await m.answer(f"Rahmat, {m.text}. 40 ta savoldan iborat so'rovnomani boshlaymizmi?", reply_markup=builder.as_markup())
 
-@dp.callback_query(F.data == "start_quiz")
-async def run_quiz(callback: types.CallbackQuery, state: FSMContext):
-    builder = InlineKeyboardBuilder().button(text="✅ Ha", callback_data="q_1").button(text="❌ Yo'q", callback_data="q_0")
-    await callback.message.edit_text(f"1-savol: {QUESTIONS[0]}", reply_markup=builder.as_markup())
+@dp.callback_query(F.data == "start_q")
+async def run_q(c: types.CallbackQuery, state: FSMContext):
+    builder = InlineKeyboardBuilder().button(text="Ha", callback_data="v_1").button(text="Yo'q", callback_data="v_0")
+    await c.message.edit_text(QUESTIONS[0], reply_markup=builder.as_markup())
     await state.set_state(QuizState.answering)
 
 @dp.callback_query(QuizState.answering)
-async def handle_quiz_steps(callback: types.CallbackQuery, state: FSMContext):
+async def process_q(c: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    curr = data['current_q']
-    score = data['total_score'] + int(callback.data.split("_")[1])
+    curr, score = data['curr'] + 1, data['score'] + int(c.data.split("_")[1])
     
-    curr += 1
     if curr < len(QUESTIONS):
-        await state.update_data(current_q=curr, total_score=score)
-        builder = InlineKeyboardBuilder().button(text="✅ Ha", callback_data="q_1").button(text="❌ Yo'q", callback_data="q_0")
-        await callback.message.edit_text(f"{curr+1}-savol: {QUESTIONS[curr]}", reply_markup=builder.as_markup())
+        await state.update_data(curr=curr, score=score)
+        builder = InlineKeyboardBuilder().button(text="Ha", callback_data="v_1").button(text="Yo'q", callback_data="v_0")
+        await c.message.edit_text(QUESTIONS[curr], reply_markup=builder.as_markup())
     else:
-        full_name = data['full_name']
+        # Natija tahlili
+        dirs = ["IT va Dasturlash", "Muhandislik", "Tibbiyot", "Ijtimoiy soha", "San'at va Dizayn"]
+        res_dir = dirs[score % 5]
+        name = data['name']
         await state.clear()
         
-        # Sertifikat yaratish (oddiyroq usulda)
-        img = Image.new('RGB', (800, 600), color=(0, 102, 204))
-        d = ImageDraw.Draw(img)
-        d.rectangle([20, 20, 780, 580], fill=(255, 255, 255))
-        d.text((400, 150), "SERTIFIKAT", fill=(0, 102, 204), anchor="mm")
-        d.text((400, 300), full_name, fill=(0, 0, 0), anchor="mm")
-        d.text((400, 450), f"Ball: {score}/50", fill=(204, 0, 0), anchor="mm")
+        cert = create_modern_cert(name, res_dir)
         
-        cert_path = os.path.join(CERT_FOLDER, f"res_{callback.from_user.id}.png")
-        img.save(cert_path)
-        
-        await callback.message.delete()
-        await bot.send_photo(callback.from_user.id, photo=FSInputFile(cert_path), caption="🏁 Tabriklaymiz! Test yakunlandi.")
-        await bot.send_message(ADMIN_ID, f"📊 Yangi natija: {full_name} - {score} ball")
-    
-    await callback.answer()
+        # Excel
+        df = pd.DataFrame([{"Sana": datetime.now(), "Ism": name, "Yo'nalish": res_dir}])
+        path = os.path.join(ADMIN_FOLDER, "statistikalar.xlsx")
+        if os.path.exists(path):
+            df = pd.concat([pd.read_excel(path), df])
+        df.to_excel(path, index=False)
+
+        await c.message.delete()
+        await bot.send_photo(c.from_user.id, photo=FSInputFile(cert), caption=f"🏁 **So'rovnoma yakunlandi!**\nTavsiya etilgan yo'nalish: **{res_dir}**")
+        await bot.send_document(ADMIN_ID, document=FSInputFile(path))
 
 async def main():
-    # Render uchun portni band qilish
     app = web.Application()
     runner = web.AppRunner(app)
     await runner.setup()
