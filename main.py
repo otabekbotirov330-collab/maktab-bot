@@ -13,7 +13,7 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.types import FSInputFile
 
 # --- SOZLAMALAR ---
-TOKEN = "7919823792:AAHDzUwHNJt36NMjRWTaaHhvHgRewRHWWic"
+TOKEN = "7919823792:AAHGbtSQdf7qf0DQGBS-Wch5Nq1LWau75Fo"
 ADMIN_ID = 8323916383
 ADMIN_FOLDER = "admin_data"
 CERT_FOLDER = "certificates"
