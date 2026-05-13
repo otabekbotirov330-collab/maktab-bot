@@ -9,8 +9,8 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 
 # --- SOZLAMALAR ---
-TOKEN = "7919823792:AAEj9P..." # O'z tokiningizni kiriting
-ADMIN_ID = 5484803761
+TOKEN = "7919823792:AAFNWGHNrlHETKf4lyZRknN_UedRKNg8ja8"
+ADMIN_ID = 8323916383
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
