@@ -13,8 +13,8 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.types import FSInputFile
 
 # --- SOZLAMALAR ---
-TOKEN = "TOKEN_YERI" # O'z tokeningizni qo'ying
-ADMIN_ID = 8323916383 
+TOKEN = "7919823792:AAFO59IhNsiFIWfC93mXmoylAmrU3brLf00"
+ADMIN_ID = 8323916383
 ADMIN_FOLDER = "admin_data"
 CERT_FOLDER = "certificates"
 
