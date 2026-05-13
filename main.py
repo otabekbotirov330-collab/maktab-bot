@@ -1,6 +1,8 @@
 import os
 import asyncio
 import logging
+import pandas as pd
+from datetime import datetime
 from aiohttp import web
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
@@ -9,8 +11,12 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 
 # --- SOZLAMALAR ---
-TOKEN = "7919823792:AAHD8CtrfxeGOPm0m6fZ8YcJzHODvwReKR4"
-ADMIN_ID = 8323916383
+TOKEN = "7919823792:AAE87S2AyZaV7niYENd-mTW6yx9AN5Ntkgg"
+ADMIN_ID = 8323916383 
+EXCEL_FOLDER = "test_results"
+
+if not os.path.exists(EXCEL_FOLDER):
+    os.makedirs(EXCEL_FOLDER)
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
@@ -19,10 +25,7 @@ dp = Dispatcher()
 class QuizState(StatesGroup):
     answering = State()
 
-class SupportState(StatesGroup):
-    waiting_for_msg = State()
-
-# --- 40 TA PROFESSIONAL SAVOL ---
+# --- 50 TA PROFESSIONAL SAVOL ---
 QUESTIONS = [
     "1. Murakkab texnik chizmalarni tushunish yoqadimi?", "2. Insonlar psixologiyasini o'rganish qiziqmi?",
     "3. Algoritmlar ustida ishlash yoqadimi?", "4. Jamoani boshqarish mas'uliyatini olasizmi?",
@@ -43,11 +46,13 @@ QUESTIONS = [
     "33. Buxgalteriya va hisob-kitob-chi?", "34. Kreativ reklama g'oyalari-chi?",
     "35. Tibbiy tashxis qo'yish jarayoni-chi?", "36. Huquqshunoslik yoqadimi?",
     "37. Landshaft dizayni qiziqmi?", "38. Mikrobiologik tajribalar-chi?",
-    "39. Muzokaralar olib borish yoqadimi?", "40. VR texnologiyalari qiziqmi?"
+    "39. Muzokaralar olib borish yoqadimi?", "40. VR texnologiyalari qiziqmi?",
+    "41. Avtomobillarni ta'mirlash sizga yoqadimi?", "42. Ijtimoiy tarmoqlar uchun kontent yaratish-chi?",
+    "43. Kosmik texnologiyalar va astronomiya-chi?", "44. Tarixiy hujjatlar bilan ishlash yoqadimi?",
+    "45. Sayyohlik yo'nalishlarini ishlab chiqish-chi?", "46. Oshpazlik sirlarini o'rganish yoqadimi?",
+    "47. Audio-video montaj ishlari-chi?", "48. Ekologik muammolarni hal qilish yoqadimi?",
+    "49. Logistika va tashuvlarni rejalashtirish-chi?", "50. Blockchain va kriptovalyutalar qiziqmi?"
 ]
-
-async def handle(request):
-    return web.Response(text="Metodik tizim faol!")
 
 def main_menu():
     builder = ReplyKeyboardBuilder()
@@ -56,136 +61,80 @@ def main_menu():
     builder.button(text="📝 Testlar va so'rovnomalar")
     builder.button(text="👨‍🏫 O'qituvchilar uchun")
     builder.button(text="ℹ️ Maslahatchi haqida")
-    builder.button(text="📚 Foydali linklar")
     builder.button(text="📞 Maslahatchi bilan bog'lanish")
     builder.adjust(2)
     return builder.as_markup(resize_keyboard=True)
 
-# --- HANDLERLAR ---
+# --- EXCEL FUNKSIYASI ---
+def save_to_excel(user_id, full_name, score):
+    file_path = os.path.join(EXCEL_FOLDER, "natijalar.xlsx")
+    data = {"Sana": [datetime.now()], "ID": [user_id], "Ism": [full_name], "Ball": [score]}
+    df_new = pd.DataFrame(data)
+    if os.path.exists(file_path):
+        df_old = pd.read_excel(file_path)
+        df_new = pd.concat([df_old, df_new], ignore_index=True)
+    df_new.to_excel(file_path, index=False)
+    return file_path
 
-@dp.message(Command("start"))
-async def start_cmd(message: types.Message):
-    await message.answer(f"🌟 Salom {message.from_user.first_name}! Men **Maktab maslahatchisi** botiman. Bo'limlardan birini tanlang:", reply_markup=main_menu())
+# --- HANDLERLAR ---
 
 @dp.message(F.text == "🔍 Kasb tanlash")
 async def career_section(message: types.Message):
-    tips = [
-        "1. IKIGAI metodidan foydalaning.", "2. Kelajak kasblari reytingini kuzating.",
-        "3. IT sohasida faqat dasturlash emas, tahlil ham muhim.", "4. Soft Skills har doim birinchi o'rinda.",
-        "5. Tanlagan sohangizda mentor toping.", "6. Chet tilini o'rganishni kechiktirmang.",
-        "7. Tanqidiy fikrlashni rivojlantiring.", "8. Kasbning qiyin tomonlarini ham o'rganing.",
-        "9. O'z qiziqishlaringizni kundalikka yozib boring.", "10. Stajyorlik dasturlarida qatnashing.",
-        "11. Networking (tanish-bilish) bazasini yarating.", "12. Sun'iy intellekt bilan ishlashni o'rganing.",
-        "13. Moliyaviy savodxonlikni oshiring.", "14. Ommaviy nutq so'zlashni mashq qiling.",
-        "15. Portfolio yaratishni hozirdan boshlang.", "16. SMM va raqamli marketingni o'rganing.",
-        "17. Tadbirkorlik ko'nikmalarini egallang.", "18. Stressli vaziyatlarda ishlashni o'rganing.",
-        "19. Vaqtni boshqarish (Time management).", "20. Jamoada ishlash madaniyatini shakllantiring.",
-        "21. Turli sohalar chorrahasidagi kasblarni ko'ring.", "22. Psixologik testlardan o'tib turing.",
-        "23. Bozor talabini doimiy tahlil qiling.", "24. Texnik bilimlarni chuqurlashtiring.",
-        "25. Kreativ yondashuvni shakllantiring.", "26. Maqsadni aniq qo'ying (SMART).",
-        "27. O'z ustingizda ishlashdan to'xtamang.", "28. Har bir xatoni tajriba deb biling.",
-        "29. Dunyoqarashingizni kengaytiring.", "30. O'z sohangizdagi yangiliklarni o'qing."
-    ]
-    await message.answer("🎯 **Kasb tanlash bo'yicha 30 ta tavsiya:**\n\n" + "\n".join(tips))
+    tips = [f"{i}. " + t for i, t in enumerate([
+        "IKIGAI metodini o'rganing.", "Mehnat bozorini tahlil qiling.", "IT sohasini chetlab o'tmang.",
+        "Xorijiy tillar - bu kalit.", "Yumshoq ko'nikmalarni (soft skills) rivojlantiring.",
+        "Mentor toping.", "Stajirovkalarga boring.", "Shaxsiy portfolio yarating.",
+        "Sohaviy tadbirlarda qatnashing.", "Tanqidiy fikrlashni o'stiring.", "Vaqtni boshqarishni o'rganing.",
+        "Networking (tanish-bilish) qiling.", "Kreativlikni oshiring.", "Sun'iy intellektdan foydalaning.",
+        "O'z loyihangizni boshlang.", "Kasbiy testlardan o'ting.", "Psixolog maslahatini oling.",
+        "Dunyo trendlarini kuzating.", "O'qishdan to'xtamang.", "Sog'liqni saqlang.",
+        "Maqsadni SMART bo'yicha qo'ying.", "Xatodan qo'rqmang.", "Tadbirkorlikni o'rganing.",
+        "SMM ko'nikmalarini oling.", "Ma'lumotlar tahlilini o'rganing.", "Ekologik kasblarni ko'ring.",
+        "Masofaviy ishlashni sinang.", "Shaxsiy brend yarating.", "Jamoada ishlashni o'rganing.",
+        "Nutq mahoratini oshiring.", "Liderlikni rivojlantiring.", "Dizayn asoslarini biling.",
+        "Mobil ilovalar yarating.", "Kiberxavfsizlikka qiziqing.", "Bulutli texnologiyalarni biling.",
+        "Kitob o'qing.", "Podkastlarni tinglang.", "Onlayn kurslarda o'qing.",
+        "Ekspert bo'ling.", "Xatolar ustida ishlang.", "Sayohat qiling.",
+        "Yangi madaniyatlarni o'rganing.", "Hobbini kasbga aylantiring.", "Daromadni rejalashtiring.",
+        "Investitsiyani o'rganing.", "EQ (Emotsional intellekt)ni oshiring.", "Robototexnikaga qiziqing.",
+        "Bio-texnologiyalarni ko'ring.", "Blockchainni o'rganing.", "Doim izlanishda bo'ling."
+    ], 1)]
+    await message.answer("🎯 **Kasb tanlash bo'yicha 50 ta maslahat:**\n\n" + "\n".join(tips))
 
 @dp.message(F.text == "👨‍👩‍👧‍👦 Ota-onalar uchun")
 async def parents_section(message: types.Message):
-    tips = [
-        "1. Farzandingizni boshqalar bilan solishtirmang.", "2. Uning qiziqishlarini qo'llab-quvvatlang.",
-        "3. O'zingiz orzu qilgan kasbga uni majburlamang.", "4. Farzand bilan do'stona muloqot o'rnating.",
-        "5. Uning har bir yutug'ini e'tirof eting.", "6. Xato qilishiga imkon bering.",
-        "7. Zamonaviy ta'lim tizimini o'rganing.", "8. Bola bilan birga kelajakni rejalashtiring.",
-        "9. Uyda xotirjam muhit yarating.", "10. Farzandning ruhiy holatiga e'tibor bering.",
-        "11. Uning hobbilariga sarmoya kiriting.", "12. Kasb tanlashda maslahatchi bilan gaplashing.",
-        "13. OTMlar haqida birga ma'lumot qidiring.", "14. Farzandingizga o'rnak bo'ling.",
-        "15. Uning mustaqil qarorlarini hurmat qiling.", "16. Texnologiyadan to'g'ri foydalanishni o'rgating.",
-        "17. Sport va sog'lom turmush tarzini targ'ib qiling.", "18. Farzandning iste'dodini barvaqt aniqlang.",
-        "19. Unga motivatsiya beruvchi kitoblar oling.", "20. Sabrli bo'lishni o'rganing va o'rgating.",
-        "21. Bolaning mantiqiy fikrlashini oshiring.", "22. Chet tili kurslariga yo'naltiring.",
-        "23. Ijtimoiy tarmoqlar ta'sirini nazorat qiling.", "24. Farzandingizga vaqt ajrating.",
-        "25. Uning qobiliyatini kashf qilishiga yordam bering.", "26. Moliyaviy tarbiya bering.",
-        "27. Farzandning orzularini masxara qilmang.", "28. Uyda kichik loyihalar topshiring.",
-        "29. Kelajak texnologiyalaridan xabardor bo'ling.", "30. Farzandingizga doimo ishonishingizni ayting."
-    ]
-    await message.answer("👨‍👩‍👧‍👦 **Ota-onalar uchun 30 ta metodik tavsiya:**\n\n" + "\n".join(tips))
-
-@dp.message(F.text == "👨‍🏫 O'qituvchilar uchun")
-async def teachers_section(message: types.Message):
-    tips = [
-        "1. Darsni qiziqarli hikoya bilan boshlang.", "2. Interaktiv o'yinlardan foydalaning.",
-        "3. O'quvchilarning har bir savoliga javob bering.", "4. Raqamli doska va infografikadan foydalaning.",
-        "5. Har bir o'quvchining kuchli tomonini toping.", "6. Darsda tanqidiy tahlilga o'rin bering.",
-        "7. O'quvchilarni loyiha asosida o'qiting.", "8. Xato qilgan o'quvchini kamsitmang.",
-        "9. Dars o'rtasida qisqa tanaffus qiling.", "10. Yangi pedagogik metodlarni o'rganing.",
-        "11. Mentorlik qobiliyatingizni oshiring.", "12. O'quvchilar bilan samimiy bo'ling.",
-        "13. Motivatsion videolar ko'rsating.", "14. Darsda jamoaviy ishlashni targ'ib qiling.",
-        "15. Bilimni amaliyot bilan bog'lang.", "16. O'quvchilarni ijodkorlikka undang.",
-        "17. ChatGPT va AI bilan ishlashni o'rgating.", "18. Ota-onalar bilan yaqin aloqada bo'ling.",
-        "19. O'z ustingizda doimiy ishlang.", "20. Stressga chidamlilikni oshiring.",
-        "21. Darsda vaqtni to'g'ri taqsimlang.", "22. O'quvchilarning ruhiy holatini his qiling.",
-        "23. Har bir darsga yangilik olib kiring.", "24. Sahnada nutq so'zlash mahoratini o'rgating.",
-        "25. O'quvchilarni mustaqil bilim olishga undang.", "26. Bilimlarni hayotiy misollar bilan tushuntiring.",
-        "27. Zamonaviy baholash tizimini joriy qiling.", "28. Metodik qo'llanmalarni doimiy yangilang.",
-        "29. O'quvchilarga ishonch bildiring.", "30. Pedagoglik kasbini seving!"
-    ]
-    await message.answer("👨‍🏫 **O'qituvchilar uchun 30 ta metodik yordam:**\n\n" + "\n".join(tips))
+    tips = [f"{i}. " + t for i, t in enumerate([
+        "Farzandingizni eshiting.", "Uning qiziqishini qo'llab-quvvatlang.", "Uni majburlamang.",
+        "O'z orzungizni unga yuklamang.", "Sohalarni birga tahlil qiling.", "Tinch muhit yarating.",
+        "Iste'dodini aniqlang.", "Ishonch bildiring.", "Xatoga to'g'ri yondashing.",
+        "Zamonaviy kasblarni o'rganing.", "Tanlov huquqini bering.", "Mentor bo'ling.",
+        "O'quv markazini birga tanlang.", "Sarmoya kiriting.", "Vaqt ajrating.",
+        "Do'st bo'ling.", "Yutug'ini bayram qiling.", "Sabrli bo'ling.",
+        "Texnologiyani birga o'rganing.", "Kitobxonlikka undang.", "Sportga yo'naltiring.",
+        "Intuitsiyaga ishoning.", "Boshqalar bilan solishtirmang.", "Namuna bo'ling.",
+        "Sayohatga olib boring.", "Mustaqillikka o'rgating.", "Mas'uliyatni bering.",
+        "Kelajak haqida gaplashing.", "Ko'rgazmalarga boring.", "Ochiq muloqot qiling.",
+        "Hobbini hurmat qiling.", "Kreativlikni bo'g'mang.", "Darsiga yordam bering.",
+        "Xotirjamlikni saqlang.", "Fikrini so'rang.", "Motivatsiya bering.",
+        "Daldali bo'ling.", "Birga yechim qidiring.", "Salomatligini o'ylang.",
+        "Dam olishga qo'ying.", "Nazoratni kamaytiring.", "Ishonch quring.",
+        "Tajriba ulashing.", "Dunyoqarashini kengaytiring.", "Yangi bilimga undang.",
+        "Kalitni ko'rsating.", "Yonida ekaningizni bildiring.", "Seving.",
+        "Faxrlaning.", "Kelajagiga ishoning."
+    ], 1)]
+    await message.answer("👨‍👩‍👧‍👦 **Ota-onalar uchun 50 ta qoida:**\n\n" + "\n".join(tips))
 
 @dp.message(F.text == "ℹ️ Maslahatchi haqida")
-async def counselor_info(message: types.Message):
+async def info_cmd(message: types.Message):
     info = [
         "👤 **F.I.SH:** Otabek Bakhtiyorovich Botirov",
         "🏫 **Lavozimi:** “Kelajak” markazlarining umumiy oʻrta ta’lim muassasalaridagi oʻquvchilar tashabbuslarini qoʻllab-quvvatlash boʻyicha maktab maslahatchisi",
         "📍 **Hudud:** Farg'ona viloyati, Rishton tumani",
         "📜 **Asos:** Oʻzbekiston Respublikasi Maktabgacha va maktab ta’limi vazirining 2026-yil “21”-apreldagi 153–sonli buyrugʻiga ILOVA",
-        "📸 **Hobbisi:** Foto-video operatorlik, sun'iy intellekt yordamida kontent yaratish",
-        "💻 **Raqamli ko'nikma:** Python, aiogram bot development, raqamli marketing",
-        "🚀 **Loyiha:** 'StartUp Maktab' va @tashabbus_maktab_bot yaratuvchisi",
-        "🎯 **Maqsad:** Iqtidorli yoshlarni 'Presidential Gifted Children' dasturiga tayyorlash",
-        "🛠 **Asosiy yo'nalishi:** O'quvchilar tashabbuslari va loyihalarini koordinatsiya qilish",
-        "📖 **Faoliyat:** 'Yosh kitobxon' ko'rik tanlovi koordinatori",
-        "🏛 **Hamkorlik:** 'Kelajak' markazi va School No. 6 o'rtasidagi koordinator",
-        "💼 **Ish uslubi:** Innovatsion loyihalar va STARTUP tashabbuslarini qo'llash",
-        "📅 **Qabul:** Doimiy ravishda Telegram orqali ochiq muloqotda",
-        "📧 **Aloqa:** @otabekbotirov330",
-        "🔎 **Tahlil:** Har bir o'quvchining ichki potensialini kashf qilish",
-        "📈 **Natija:** Yuzlab o'quvchilarga to'g'ri yo'l ko'rsatish",
-        "🤖 **Bot:** Ushbu tizim o'quvchilar va ustozlar uchun begaraz yaratildi.",
-        "📊 **Tajriba:** STEM va raqamli texnologiyalar integratsiyasi bo'yicha mutaxassis.",
-        "🌟 **Slogan:** 'Sening bugungi harakating - ertangi natijang!'",
-        "🕊 **Shior:** 'Yoshlar - yurt kelajagi, ularga yo'l ko'rsatish bizning burchimiz!'"
+        "📸 **Hobbisi:** Foto-video operator, sun'iy intellekt yordamida kontent yaratish",
+        "🚀 **Loyiha:** 'StartUp Maktab' va @tashabbus_maktab_bot"
     ]
-    await message.answer("ℹ️ **Maktab maslahatchisi haqida batafsil:**\n\n" + "\n".join(info))
-
-@dp.message(F.text == "📚 Foydali linklar")
-async def links_section(message: types.Message):
-    text = ("📚 **Foydali manbalar (10 tadan ortiq):**\n\n"
-            "🛠 **Kasb-hunar o'rganish:**\n"
-            "• [Kasbim.uz](http://kasbim.uz) — Kasblar portal.\n"
-            "• [Ish.uz](https://ish.uz) — Bo'sh ish o'rinlari.\n"
-            "• [My.mehnat.uz](https://my.mehnat.uz) — Bandlik bazasi.\n"
-            "• [It-park.uz](https://it-park.uz) — IT ta'limi.\n\n"
-            "🎓 **OTMlar va Grantlar:**\n"
-            "• [Uzbmb.uz](https://my.uzbmb.uz) — DTM testlari.\n"
-            "• [Edu.uz](https://edu.uz) — OTM yangiliklari.\n"
-            "• [Studyin.uz](https://studyinuzbekistan.uz) — Institutlar.\n"
-            "• [Grantlar.uz](https://grantlar.uz) — Bepul grantlar.\n\n"
-            "📖 **Ustozlar uchun qo'llanmalar:**\n"
-            "• [Ziyonet.uz](http://ziyonet.uz) — Ta'lim portali.\n"
-            "• [Kitob.uz](https://kitob.uz) — Elektron darsliklar.\n"
-            "• [Metodik.uz](http://metodik.uz) — Dars ishlanmalari.\n"
-            "• [KhanAcademy](https://uz.khanacademy.org) — Jahon darslari.")
-    await message.answer(text, disable_web_page_preview=True)
-
-@dp.message(F.text == "📞 Maslahatchi bilan bog'lanish")
-async def support_start(message: types.Message, state: FSMContext):
-    await message.answer("✍️ Savolingizni yozib qoldiring. Maslahatchi tez orada javob beradi:")
-    await state.set_state(SupportState.waiting_for_msg)
-
-@dp.message(SupportState.waiting_for_msg)
-async def support_done(message: types.Message, state: FSMContext):
-    await bot.send_message(ADMIN_ID, f"📩 **Yangi murojaat!**\n👤: {message.from_user.full_name}\n✍️: {message.text}")
-    await message.answer("✅ Xabaringiz yuborildi. Rahmat!")
-    await state.clear()
+    await message.answer("\n".join(info))
 
 @dp.message(F.text == "📝 Testlar va so'rovnomalar")
 async def quiz_start(message: types.Message, state: FSMContext):
@@ -193,7 +142,7 @@ async def quiz_start(message: types.Message, state: FSMContext):
     builder = InlineKeyboardBuilder()
     builder.button(text="✅ Ha", callback_data="q_1")
     builder.button(text="❌ Yo'q", callback_data="q_0")
-    await message.answer("📝 **Professional test (40 ta savol)**\n\n" + QUESTIONS[0], reply_markup=builder.as_markup())
+    await message.answer(f"📝 **Professional test (50 savol)**\n\n{QUESTIONS[0]}", reply_markup=builder.as_markup())
     await state.set_state(QuizState.answering)
 
 @dp.callback_query(QuizState.answering)
@@ -206,19 +155,19 @@ async def quiz_step(callback: types.CallbackQuery, state: FSMContext):
         builder = InlineKeyboardBuilder()
         builder.button(text="✅ Ha", callback_data="q_1")
         builder.button(text="❌ Yo'q", callback_data="q_0")
-        await callback.message.edit_text(f"Savol {curr+1}/40:\n\n{QUESTIONS[curr]}", reply_markup=builder.as_markup())
+        await callback.message.edit_text(f"Savol {curr+1}/50:\n\n{QUESTIONS[curr]}", reply_markup=builder.as_markup())
     else:
         await state.clear()
-        res = "🌟 Yuqori salohiyat! Tahliliy sohalarga moyilsiz." if score > 30 else "💡 Ijodiy va ijtimoiy sohalarda muvaffaqiyat qozonasiz."
-        await callback.message.edit_text(f"🏁 Test tugadi!\nNatija: {score}/40 ball.\n\n{res}")
+        save_to_excel(callback.from_user.id, callback.from_user.full_name, score)
+        await callback.message.edit_text(f"🏁 **Test tugadi!**\nNatija: {score}/50 ball.\n\nNatija Excelga saqlandi va maslahatchiga yuborildi.")
+        await bot.send_message(ADMIN_ID, f"📊 **Yangi natija!**\n👤 {callback.from_user.full_name}\n🎯 Ball: {score}")
     await callback.answer()
 
 async def main():
     app = web.Application()
-    app.router.add_get("/", handle)
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', int(os.getenv("PORT", 8080)))
+    site = web.TCPSite(runner, '0.0.0.0', 8080)
     await site.start()
     await dp.start_polling(bot)
 
