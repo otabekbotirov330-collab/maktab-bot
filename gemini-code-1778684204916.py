@@ -10,13 +10,15 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.types import FSInputFile
 
 # --- SOZLAMALAR ---
-TOKEN = "7919823792:AAFnn3CFMjMND-d26m6Svp1J_UyVgh3SEC0"
+TOKEN = "7919823792:AAFnn3CFMjMND-d26m6Svp1J_UyVgh3SEC0" 
 ADMIN_ID = 8323916383 
-ADMIN_FOLDER, CERT_FOLDER = "admin_data", "certificates"
-EXCEL_FILE = os.path.join(ADMIN_FOLDER, "umumiy_natijalar.xlsx")
+DATA_FOLDER = "reports" 
+CERT_FOLDER = "temp_certs"
 
-for f in [ADMIN_FOLDER, CERT_FOLDER]:
+for f in [DATA_FOLDER, CERT_FOLDER]:
     if not os.path.exists(f): os.makedirs(f)
+
+EXCEL_FILE = os.path.join(DATA_FOLDER, "umumiy_hisobot.xlsx")
 
 logging.basicConfig(level=logging.INFO)
 bot, dp = Bot(token=TOKEN), Dispatcher()
@@ -24,9 +26,6 @@ bot, dp = Bot(token=TOKEN), Dispatcher()
 class QuizState(StatesGroup):
     waiting_name = State()
     answering = State()
-
-class ContactState(StatesGroup):
-    waiting_message = State()
 
 # --- 40 TA SAVOL ---
 QUESTIONS = [f"{i}-savol. Tanlagan yo'nalishingiz bo'yicha innovatsion loyihalar yaratishni xohlaysizmi?" for i in range(1, 41)]
