@@ -103,7 +103,7 @@ def create_modern_cert(name, direction):
     img = Image.new('RGB', (1200, 800), color=(15, 15, 35))
     draw = ImageDraw.Draw(img)
     draw.rectangle([40, 40, 1160, 760], outline=(0, 255, 255), width=4)
-    # Oddiy matn (Render muammosiz chiqishi uchun)
+    sertifikar.png
     draw.text((600, 150), "KASBIY YO'NALTIRISH SERTIFIKATI", fill=(0, 255, 255), anchor="mm")
     draw.text((600, 350), name.upper(), fill=(255, 255, 255), anchor="mm")
     draw.text((600, 500), f"Tavsiya: {direction}", fill=(255, 215, 0), anchor="mm")
@@ -127,7 +127,7 @@ async def about(m: types.Message):
         "💻 **Raqamli ko'nikma:** Python, aiogram development\n"
         "🚀 **Loyiha:** 'StartUp Maktab' yaratuvchisi\n"
         "🎯 **Maqsad:** Iqtidorli yoshlarni qo'llab-quvvatlash\n"
-        "📧 **Aloqa:** J780wa\n\n"
+        "📧 **Aloqa:** @J780wa\n\n"
         "🌟 **Slogan:** 'Sening bugungi harakating - ertangi natijang!'"
     )
     await m.answer(info)
