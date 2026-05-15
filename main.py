@@ -11,7 +11,7 @@ from aiogram.types import FSInputFile
 
 # --- SOZLAMALAR ---
 TOKEN = "7919823792:AAFnn3CFMjMND-d26m6Svp1J_UyVgh3SEC0"
-ADMIN_ID = 8323916383 
+ADMIN_ID = 8323916383
 ADMIN_FOLDER, CERT_FOLDER = "admin_data", "certificates"
 
 for f in [ADMIN_FOLDER, CERT_FOLDER]:
