@@ -127,7 +127,7 @@ async def about(m: types.Message):
         "💻 **Raqamli ko'nikma:** Python, aiogram development\n"
         "🚀 **Loyiha:** 'StartUp Maktab' yaratuvchisi\n"
         "🎯 **Maqsad:** Iqtidorli yoshlarni qo'llab-quvvatlash\n"
-        "📧 **Aloqa:** @otabekbotirov330\n\n"
+        "📧 **Aloqa:** J780wa\n\n"
         "🌟 **Slogan:** 'Sening bugungi harakating - ertangi natijang!'"
     )
     await m.answer(info)
